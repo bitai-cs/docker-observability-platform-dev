@@ -24,10 +24,19 @@ storage:
     local:
       path: /var/tempo/blocks
 
-# Trace retention 72h (spec 6). UNVERIFIED location of this key in 3.x:
-# see Docker-service-readyness-verification-6.md.
-compaction:
-  block_retention: 72h
+# Trace retention 72h (spec 6). A top-level `compaction:` block is rejected by
+# Tempo 3.1.1. The config reference places block_retention in the compaction
+# block used by backend_scheduler and backend_worker; both are set. Whether this
+# is the effective setting is checked on the running Tempo (Docker-service-readyness-verification-6.md).
+backend_scheduler:
+  provider:
+    compaction:
+      compaction:
+        block_retention: 72h
+
+backend_worker:
+  compaction:
+    block_retention: 72h
 
 metrics_generator:
   storage:
