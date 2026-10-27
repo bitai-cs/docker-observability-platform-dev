@@ -1,0 +1,11 @@
+# Server-specific settings and secrets
+.env
+secrets/*
+!secrets/.gitkeep
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

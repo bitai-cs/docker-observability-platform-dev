@@ -1,0 +1,20 @@
+# Alertmanager - routes all alerts to Mailpit (SMTP sink). Spec v0.11, 4.4 and 9.
+# The addresses below are placeholders: Mailpit accepts any sender/recipient.
+
+global:
+  smtp_smarthost: mailpit:1025
+  smtp_from: alertmanager@observability.local
+  smtp_require_tls: false
+
+route:
+  receiver: mailpit
+  group_by: [alertname, service_namespace, service_name]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: mailpit
+    email_configs:
+      - to: developers@observability.local
+        send_resolved: true

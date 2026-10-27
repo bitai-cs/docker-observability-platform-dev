@@ -1,0 +1,44 @@
+# Grafana Tempo 3.x, monolithic (target: all), local storage. Spec v0.11, 4.2.
+# Not a 2.x config: no ingester, compactor or metrics_generator_client blocks.
+
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+# Trace retention 72h (spec 6). UNVERIFIED location of this key in 3.x:
+# see Docker-service-readyness-verification-6.md.
+compaction:
+  block_retention: 72h
+
+metrics_generator:
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors:
+        - service-graphs
+        - span-metrics

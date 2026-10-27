@@ -1,0 +1,108 @@
+# OpenTelemetry Collector (contrib) - spec v0.11, section 8.
+# Applications send OTLP here only. No sampling: every trace is kept.
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Container limit is 512 MiB (docker-compose.yml); the limiter stays below it.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 384
+    spike_limit_mib: 96
+
+  # Loki rejects entries whose structured metadata is too large (spec 4.5):
+  # cut every log attribute value to 4096 characters.
+  transform/logs:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - truncate_all(attributes, 4096)
+
+  # Safety net for sensitive data (spec 11). Values on matching keys, and
+  # values that look like JWTs or Bearer tokens, are masked.
+  redaction:
+    allow_all_keys: true
+    blocked_key_patterns:
+      - "(?i).*(password|passwd|secret|token|authorization|api[_-]?key|connection[_-]?string|cookie).*"
+    blocked_values:
+      - "eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*"
+      - "(?i)bearer\\s+[A-Za-z0-9._~+/=-]+"
+    summary: info
+
+  batch: {}
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+    sending_queue:
+      enabled: true
+      queue_size: 1000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+  otlphttp/prometheus:
+    # The exporter appends /v1/metrics -> /api/v1/otlp/v1/metrics
+    endpoint: http://prometheus:9090/api/v1/otlp
+    tls:
+      insecure: true
+    sending_queue:
+      enabled: true
+      queue_size: 1000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    tls:
+      insecure: true
+    sending_queue:
+      enabled: true
+      queue_size: 1000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+service:
+  extensions: [health_check]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, redaction, batch]
+      exporters: [otlp/tempo]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, redaction, batch]
+      exporters: [otlphttp/prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, transform/logs, redaction, batch]
+      exporters: [otlphttp/loki]

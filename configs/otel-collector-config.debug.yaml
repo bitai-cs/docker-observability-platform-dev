@@ -1,0 +1,15 @@
+# Merged over otel-collector-config.yaml by docker-compose.debug.yml.
+# Lists are replaced when configs merge, so each pipeline restates its exporters.
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      exporters: [otlp/tempo, debug]
+    metrics:
+      exporters: [otlphttp/prometheus, debug]
+    logs:
+      exporters: [otlphttp/loki, debug]

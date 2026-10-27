@@ -1,0 +1,82 @@
+# Baseline alert rules - spec v0.11, section 9.3.
+# Application metric names assume Prometheus' default OTLP translation
+# (UnderscoreEscapingWithSuffixes): http.server.request.duration (unit s)
+# becomes http_server_request_duration_seconds_*.
+
+groups:
+  - name: application-services
+    rules:
+      - alert: ServiceHighErrorRate
+        expr: |
+          (
+            sum by (service_namespace, service_name) (
+              rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m])
+            )
+            /
+            sum by (service_namespace, service_name) (
+              rate(http_server_request_duration_seconds_count[5m])
+            )
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 5xx error ratio on {{ $labels.service_name }}"
+          description: "{{ $labels.service_namespace }}/{{ $labels.service_name }} has returned more than 5% HTTP 5xx responses for 5 minutes (current ratio {{ $value | humanizePercentage }})."
+
+      - alert: ServiceHighLatencyP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, service_namespace, service_name) (
+              rate(http_server_request_duration_seconds_bucket[5m])
+            )
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency on {{ $labels.service_name }}"
+          description: "{{ $labels.service_namespace }}/{{ $labels.service_name }} p95 request duration has been above 1 second for 5 minutes (current {{ $value | humanizeDuration }})."
+
+      # Push-based apps have no `up` series. A service counts as "seen" if its
+      # target_info series existed in the last hour; it is "silent" when that
+      # series has had no sample for 5 minutes (Prometheus' default lookback).
+      # The alert stops firing once the service has been silent for over an hour.
+      - alert: ServiceStoppedReporting
+        expr: |
+          count by (service_namespace, service_name) (last_over_time(target_info[1h]))
+          unless
+          count by (service_namespace, service_name) (target_info)
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service_name }} stopped reporting"
+          description: "{{ $labels.service_namespace }}/{{ $labels.service_name }} sent metrics during the last hour but nothing in the last 5 minutes."
+
+  - name: platform
+    rules:
+      - alert: CollectorExportFailures
+        expr: sum by (exporter) (increase({__name__=~"otelcol_exporter_send_failed_.+"}[5m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Collector failed to export data via {{ $labels.exporter }}"
+          description: "The Collector's {{ $labels.exporter }} exporter reported failed sends in the last 5 minutes."
+
+      - alert: CollectorRefusingData
+        expr: sum by (receiver) (increase({__name__=~"otelcol_receiver_refused_.+"}[5m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Collector refused incoming data on {{ $labels.receiver }}"
+          description: "The Collector refused data on {{ $labels.receiver }} in the last 5 minutes (for example memory limiter refusals)."
+
+      - alert: PlatformComponentDown
+        expr: up{job=~"prometheus|otel-collector|tempo|loki|alertmanager"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} is down"
+          description: "Prometheus could not scrape {{ $labels.job }} ({{ $labels.instance }}) for 2 minutes."

@@ -1,0 +1,160 @@
+name: observability-platform
+
+# Shared development observability platform (spec v0.11).
+# All values that vary per server come from .env (copy .env.example to .env).
+# `${VAR:?message}` makes Compose stop with the message when VAR is missing.
+
+x-restart: &restart
+  restart: on-failure
+
+services:
+  # --- OpenTelemetry Collector (contrib): single entry point for OTLP ---------
+  # No Compose health check: the image is built FROM scratch (no shell, curl or
+  # wget). Check http://<server>:13133 from outside (see README).
+  otel-collector:
+    <<: *restart
+    image: otel/opentelemetry-collector-contrib:${OTELCOL_TAG:?Set OTELCOL_TAG in .env}
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    mem_limit: 512m # provisional (spec section 15.2); revisit after the first run
+    volumes:
+      - ./configs/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "${BIND_ADDRESS:?Set BIND_ADDRESS in .env}:${OTLP_GRPC_PORT:?Set OTLP_GRPC_PORT in .env}:4317"
+      - "${BIND_ADDRESS}:${OTLP_HTTP_PORT:?Set OTLP_HTTP_PORT in .env}:4318"
+      - "${BIND_ADDRESS}:${COLLECTOR_HEALTH_PORT:?Set COLLECTOR_HEALTH_PORT in .env}:13133"
+    depends_on:
+      - tempo
+      - prometheus
+      - loki
+    networks: [observability]
+
+  # --- Grafana Tempo: traces -------------------------------------------------
+  tempo:
+    <<: *restart
+    image: grafana/tempo:${TEMPO_TAG:?Set TEMPO_TAG in .env}
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./configs/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3200/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks: [observability]
+
+  # --- Grafana Loki: logs ----------------------------------------------------
+  loki:
+    <<: *restart
+    image: grafana/loki:${LOKI_TAG:?Set LOKI_TAG in .env}
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./configs/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki-data:/loki
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3100/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks: [observability]
+
+  # --- Prometheus: metrics backend and rule engine ---------------------------
+  prometheus:
+    <<: *restart
+    image: prom/prometheus:${PROMETHEUS_TAG:?Set PROMETHEUS_TAG in .env}
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=3d
+      - --web.enable-otlp-receiver
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./configs/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "${BIND_ADDRESS}:${PROMETHEUS_PORT:?Set PROMETHEUS_PORT in .env}:9090"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [observability]
+
+  # --- Alertmanager: alert routing (no Compose health check, spec 15.1) ------
+  alertmanager:
+    <<: *restart
+    image: prom/alertmanager:${ALERTMANAGER_TAG:?Set ALERTMANAGER_TAG in .env}
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./configs/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    ports:
+      - "${BIND_ADDRESS}:${ALERTMANAGER_PORT:?Set ALERTMANAGER_PORT in .env}:9093"
+    depends_on:
+      - mailpit
+    networks: [observability]
+
+  # --- Mailpit: SMTP sink for alerts; UI protected by its auth file ----------
+  # No Compose health check (spec 15.1). The auth file is created by the
+  # operator in ./secrets (see README) and is never committed.
+  mailpit:
+    <<: *restart
+    image: axllent/mailpit:${MAILPIT_TAG:?Set MAILPIT_TAG in .env}
+    environment:
+      MP_UI_AUTH_FILE: /run/secrets/mailpit_ui_auth
+    secrets:
+      - mailpit_ui_auth
+    ports:
+      - "${BIND_ADDRESS}:${MAILPIT_UI_PORT:?Set MAILPIT_UI_PORT in .env}:8025"
+    networks: [observability]
+
+  # --- Grafana: interface ----------------------------------------------------
+  grafana:
+    <<: *restart
+    image: grafana/grafana:${GRAFANA_TAG:?Set GRAFANA_TAG in .env}
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?Set GRAFANA_ADMIN_USER in .env}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SERVER_ROOT_URL: http://${BIND_ADDRESS}:${GRAFANA_PORT:?Set GRAFANA_PORT in .env}/
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./configs/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./configs/grafana/dashboards:/etc/grafana/dashboards:ro
+    ports:
+      - "${BIND_ADDRESS}:${GRAFANA_PORT}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      - tempo
+      - prometheus
+      - loki
+      - alertmanager
+    networks: [observability]
+
+networks:
+  observability:
+    name: observability-net
+
+volumes:
+  tempo-data:
+  loki-data:
+  prometheus-data:
+  alertmanager-data:
+  grafana-data:
+
+secrets:
+  mailpit_ui_auth:
+    file: ./secrets/mailpit-ui-auth

@@ -1,0 +1,17 @@
+# Optional override that adds the Collector `debug` exporter (prints every
+# received trace, metric and log to the Collector's stdout).
+#
+# Enable:   docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d
+# Read:     docker compose logs -f otel-collector
+# Disable:  docker compose up -d     (without the second -f file)
+#
+# The Collector merges the two config files; the debug file only restates the
+# exporter lists of the pipelines.
+
+services:
+  otel-collector:
+    command:
+      - --config=/etc/otelcol-contrib/config.yaml
+      - --config=/etc/otelcol-contrib/config.debug.yaml
+    volumes:
+      - ./configs/otel-collector-config.debug.yaml:/etc/otelcol-contrib/config.debug.yaml:ro

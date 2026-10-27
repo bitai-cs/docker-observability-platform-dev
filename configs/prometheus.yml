@@ -1,0 +1,46 @@
+# Prometheus - metrics backend and rule engine. Spec v0.11, 4.3.
+# Applications are NOT scraped: they push OTLP through the Collector.
+# Only the platform's own components are scraped.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+otlp:
+  promote_resource_attributes:
+    - service.name
+    - service.namespace
+    - service.instance.id
+    - service.version
+    - deployment.environment.name
+  keep_identifying_resource_attributes: true
+  translation_strategy: UnderscoreEscapingWithSuffixes
+
+storage:
+  tsdb:
+    out_of_order_time_window: 30m
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: otel-collector
+    static_configs:
+      - targets: ["otel-collector:8888"]
+  - job_name: tempo
+    static_configs:
+      - targets: ["tempo:3200"]
+  - job_name: loki
+    static_configs:
+      - targets: ["loki:3100"]
+  - job_name: alertmanager
+    static_configs:
+      - targets: ["alertmanager:9093"]
