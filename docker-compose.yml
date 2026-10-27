@@ -29,6 +29,8 @@ services:
     networks: [observability]
 
   # --- Grafana Tempo: traces -------------------------------------------------
+  # No Compose health check: the image has no shell or wget. Status: Prometheus
+  # `up{job="tempo"}` (dashboard "Collector and platform health").
   tempo:
     <<: *restart
     image: grafana/tempo:${TEMPO_TAG:?Set TEMPO_TAG in .env}
@@ -36,15 +38,11 @@ services:
     volumes:
       - ./configs/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo-data:/var/tempo
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3200/ready"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
     networks: [observability]
 
   # --- Grafana Loki: logs ----------------------------------------------------
+  # No Compose health check: the image has no shell or wget. Status: Prometheus
+  # `up{job="loki"}` (dashboard "Collector and platform health").
   loki:
     <<: *restart
     image: grafana/loki:${LOKI_TAG:?Set LOKI_TAG in .env}
@@ -52,12 +50,6 @@ services:
     volumes:
       - ./configs/loki.yaml:/etc/loki/loki.yaml:ro
       - loki-data:/loki
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3100/ready"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
     networks: [observability]
 
   # --- Prometheus: metrics backend and rule engine ---------------------------
