@@ -29,8 +29,8 @@ services:
     networks: [observability]
 
   # --- Grafana Tempo: traces -------------------------------------------------
-  # No Compose health check: the image has no shell or wget. Status: Prometheus
-  # `up{job="tempo"}` (dashboard "Collector and platform health").
+  # Health check uses Tempo's own `-health` flag (calls /ready and exits); the
+  # image has no shell or wget.
   tempo:
     <<: *restart
     image: grafana/tempo:${TEMPO_TAG:?Set TEMPO_TAG in .env}
@@ -38,6 +38,12 @@ services:
     volumes:
       - ./configs/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo-data:/var/tempo
+    healthcheck:
+      test: ["CMD", "/tempo", "-health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     networks: [observability]
 
   # --- Grafana Loki: logs ----------------------------------------------------

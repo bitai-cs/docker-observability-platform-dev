@@ -58,7 +58,7 @@ Set in `.env` (see `.env.example`): Collector contrib 0.164.0, Tempo 3.1.1, Loki
    docker compose up -d
    docker compose ps
    ```
-   Prometheus and Grafana show `healthy` after a minute or so. The Collector, Tempo, Loki, Alertmanager and Mailpit have no Compose health status (their images have no shell or wget). Check the Collector with `curl http://<server>:13133/`, and Tempo, Loki and the others in Grafana's dashboard "Collector and platform health" (`up` per component) or in Prometheus at `http://<server>:9090/targets`.
+   Prometheus, Grafana and Tempo show `healthy` after a minute or so. The Collector, Loki, Alertmanager and Mailpit have no Compose health status (their images have no shell or wget, or no health command). Check the Collector with `curl http://<server>:13133/`, and Loki and the others in Grafana's dashboard "Collector and platform health" (`up` per component) or in Prometheus at `http://<server>:9090/targets`.
 5. Run the smoke test (sends traces, metrics and logs with `telemetrygen`, no application needed):
    ```bash
    bash scripts/smoke-test.sh
