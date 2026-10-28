@@ -3,11 +3,9 @@
 # application involved) and checks that each signal arrived.
 #
 # Run on the Docker server, in the repository folder, after `docker compose up -d`:
-#   ./scripts/smoke-test.sh
+#   bash scripts/smoke-test.sh
 #
-# Needs: docker, curl, and a populated .env. The telemetrygen flags used here
-# must be checked once with `docker run --rm <image> traces --help`
-# (Docker-service-readyness-verification-6.md).
+# Needs: docker, curl, and a populated .env.
 
 set -u
 cd "$(dirname "$0")/.."

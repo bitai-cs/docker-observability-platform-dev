@@ -15,7 +15,7 @@ services:
     <<: *restart
     image: otel/opentelemetry-collector-contrib:${OTELCOL_TAG:?Set OTELCOL_TAG in .env}
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
-    mem_limit: 512m # provisional (spec section 15.2); revisit after the first run
+    mem_limit: 512m # owner decision (spec section 15.1); see Container-Resource-Recommendations.md
     volumes:
       - ./configs/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
     ports:

@@ -36,7 +36,7 @@ Set in `.env` (see `.env.example`): Collector contrib 0.164.0, Tempo 3.1.1, Loki
 
 ## Operator guide (on the Docker server)
 
-**Prerequisites:** the host laptop stays awake while the platform is in use (closing the lid sleeps it and pauses the VM), and the server clock matches real time (`date -u` against a trusted clock; fix with `Docker-server-clock-step-commands.md` from the project if it drifts).
+**Prerequisites:** the host laptop stays awake while the platform is in use (closing the lid sleeps it and pauses the VM), and the server clock matches real time (check `date -u` against a trusted clock). Set the appropriate time zone on the server and use NTP for time synchronization.
 
 1. Clone the repository and enter it:
    ```bash

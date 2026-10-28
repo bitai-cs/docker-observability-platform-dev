@@ -26,8 +26,8 @@ storage:
 
 # Trace retention 72h (spec 6). A top-level `compaction:` block is rejected by
 # Tempo 3.1.1. The config reference places block_retention in the compaction
-# block used by backend_scheduler and backend_worker; both are set. Whether this
-# is the effective setting is checked on the running Tempo (Docker-service-readyness-verification-6.md).
+# block used by backend_scheduler and backend_worker; both are set. The running
+# Tempo reports block_retention 72h0m0s for both (http://tempo:3200/status/config).
 backend_scheduler:
   provider:
     compaction:
