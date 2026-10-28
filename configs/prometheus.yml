@@ -1,4 +1,4 @@
-# Prometheus - metrics backend and rule engine. Spec v0.11, 4.3.
+# Prometheus - metrics backend and rule engine.  Spec 4.3.
 # Applications are NOT scraped: they push OTLP through the Collector.
 # Only the platform's own components are scraped.
 

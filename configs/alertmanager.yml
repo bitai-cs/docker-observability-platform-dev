@@ -1,4 +1,4 @@
-# Alertmanager - routes all alerts to Mailpit (SMTP sink). Spec v0.11, 4.4 and 9.
+# Alertmanager - routes all alerts to Mailpit (SMTP sink).  Spec 4.4 and 9.
 # The addresses below are placeholders: Mailpit accepts any sender/recipient.
 
 global:

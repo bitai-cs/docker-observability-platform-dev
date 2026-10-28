@@ -8,8 +8,8 @@ exporters:
 service:
   pipelines:
     traces:
-      exporters: [otlp/tempo, debug]
+      exporters: [otlp_grpc/tempo, debug]
     metrics:
-      exporters: [otlphttp/prometheus, debug]
+      exporters: [otlp_http/prometheus, debug]
     logs:
-      exporters: [otlphttp/loki, debug]
+      exporters: [otlp_http/loki, debug]

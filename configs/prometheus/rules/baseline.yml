@@ -1,4 +1,4 @@
-# Baseline alert rules - spec v0.11, section 9.3.
+# Baseline alert rules - spec section 9.3.
 # Application metric names assume Prometheus' default OTLP translation
 # (UnderscoreEscapingWithSuffixes): http.server.request.duration (unit s)
 # becomes http_server_request_duration_seconds_*.

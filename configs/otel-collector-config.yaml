@@ -1,4 +1,4 @@
-# OpenTelemetry Collector (contrib) - spec v0.11, section 8.
+# OpenTelemetry Collector (contrib) - spec section 8.
 # Applications send OTLP here only. No sampling: every trace is kept.
 
 extensions:
@@ -43,7 +43,7 @@ processors:
   batch: {}
 
 exporters:
-  otlp/tempo:
+  otlp_grpc/tempo:
     endpoint: tempo:4317
     tls:
       insecure: true
@@ -56,7 +56,7 @@ exporters:
       max_interval: 30s
       max_elapsed_time: 300s
 
-  otlphttp/prometheus:
+  otlp_http/prometheus:
     # The exporter appends /v1/metrics -> /api/v1/otlp/v1/metrics
     endpoint: http://prometheus:9090/api/v1/otlp
     tls:
@@ -70,7 +70,7 @@ exporters:
       max_interval: 30s
       max_elapsed_time: 300s
 
-  otlphttp/loki:
+  otlp_http/loki:
     endpoint: http://loki:3100/otlp
     tls:
       insecure: true
@@ -97,12 +97,12 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, redaction, batch]
-      exporters: [otlp/tempo]
+      exporters: [otlp_grpc/tempo]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, redaction, batch]
-      exporters: [otlphttp/prometheus]
+      exporters: [otlp_http/prometheus]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, transform/logs, redaction, batch]
-      exporters: [otlphttp/loki]
+      exporters: [otlp_http/loki]

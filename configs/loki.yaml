@@ -1,4 +1,4 @@
-# Grafana Loki 3.x, single instance, filesystem storage. Spec v0.11, 4.5.
+# Grafana Loki 3.x, single instance, filesystem storage.  Spec 4.5.
 
 auth_enabled: false
 

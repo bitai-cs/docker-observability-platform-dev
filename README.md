@@ -2,7 +2,7 @@
 
 Shared **development** observability platform for a trusted LAN: developers send OpenTelemetry (OTLP) traces, metrics and logs to one Collector, then query, correlate and alert on them in Grafana. Not for production or internet-facing use.
 
-Specification: `OpenTelemetry-Infrastructure-Specification-v0.11` (kept in the OTEL-Dev-Infrastructure project).
+Specification: `OpenTelemetry-Infrastructure-Specification` (latest version kept in the OTEL-Dev-Infrastructure project).
 
 ```text
 Your services ── OTLP gRPC :4317 / HTTP :4318 ──► OpenTelemetry Collector (contrib)
@@ -43,7 +43,7 @@ Set in `.env` (see `.env.example`): Collector contrib 0.164.0, Tempo 3.1.1, Loki
    git clone https://github.com/bitai-cs/docker-observability-platform-dev.git
    cd docker-observability-platform-dev
    ```
-2. Create `.env` from the example and edit the Grafana administrator password (and `BIND_ADDRESS` if the server address changes):
+2. Create `.env` from the example and edit the Grafana administrator password (and `BIND_ADDRESS` if the server address changes). **Do this before the first `docker compose up -d`:** Grafana stores the administrator password in its volume the first time it starts, and editing `.env` afterwards does not change it (change it in Grafana instead). Also, if you load `.env` into your shell (`set -a; . ./.env; set +a`), do it after editing the file and repeat it after every edit: variables exported in the shell override `.env` for Compose.
    ```bash
    cp .env.example .env
    ```
@@ -58,7 +58,7 @@ Set in `.env` (see `.env.example`): Collector contrib 0.164.0, Tempo 3.1.1, Loki
    docker compose up -d
    docker compose ps
    ```
-   Prometheus, Grafana and Tempo show `healthy` after a minute or so. The Collector, Loki, Alertmanager and Mailpit have no Compose health status (their images have no shell or wget, or no health command). Check the Collector with `curl http://<server>:13133/`, and Loki and the others in Grafana's dashboard "Collector and platform health" (`up` per component) or in Prometheus at `http://<server>:9090/targets`.
+   Prometheus, Grafana, Tempo and Mailpit show `healthy` after a minute or so (Mailpit's own image defines its check). The Collector, Loki and Alertmanager have no health status (their images have no shell or wget, or no health command; Alertmanager has none configured). Check the Collector with `curl http://<server>:13133/`, and Loki and the others in Grafana's dashboard "Collector and platform health" (`up` per component) or in Prometheus at `http://<server>:9090/targets`.
 5. Run the smoke test (sends traces, metrics and logs with `telemetrygen`, no application needed):
    ```bash
    bash scripts/smoke-test.sh

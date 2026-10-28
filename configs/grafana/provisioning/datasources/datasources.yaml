@@ -1,6 +1,6 @@
 apiVersion: 1
 
-# Data sources provisioned as code (spec v0.11, 4.6). Fixed UIDs are referenced
+# Data sources provisioned as code (spec 4.6). Fixed UIDs are referenced
 # by the dashboards. In provisioning files "$$" is a literal "$".
 
 datasources:

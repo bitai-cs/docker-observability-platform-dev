@@ -1,4 +1,4 @@
-# Grafana Tempo 3.x, monolithic (target: all), local storage. Spec v0.11, 4.2.
+# Grafana Tempo 3.x, monolithic (target: all), local storage.  Spec 4.2.
 # Not a 2.x config: no ingester, compactor or metrics_generator_client blocks.
 
 stream_over_http_enabled: true

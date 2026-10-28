@@ -49,8 +49,9 @@ tempo=$(curl -fsS -G -u "${GRAFANA_ADMIN_USER}:${GRAFANA_ADMIN_PASSWORD}" "${G}/
 if echo "${tempo}" | grep -q '"traceID"'; then pass "traces for ${SERVICE} found in Tempo"; else fail "no traces for ${SERVICE} in Tempo: ${tempo}"; fi
 
 echo "== 6. Logs in Loki (through Grafana's data source proxy)"
-loki=$(curl -fsS -G -u "${GRAFANA_ADMIN_USER}:${GRAFANA_ADMIN_PASSWORD}" "${G}/loki/loki/api/v1/query" \
-  --data-urlencode "query={service_name=\"${SERVICE}\"}" --data-urlencode "limit=5") || loki=""
+loki=$(curl -fsS -G -u "${GRAFANA_ADMIN_USER}:${GRAFANA_ADMIN_PASSWORD}" "${G}/loki/loki/api/v1/query_range" \
+  --data-urlencode "query={service_name=\"${SERVICE}\"}" --data-urlencode "limit=5" \
+  --data-urlencode "start=$(date -d '1 hour ago' +%s)000000000" --data-urlencode "end=$(date +%s)000000000") || loki=""
 if echo "${loki}" | grep -q '"values"'; then pass "logs for ${SERVICE} found in Loki"; else fail "no logs for ${SERVICE} in Loki: ${loki}"; fi
 
 echo "== 7. Tempo span metrics in Prometheus (metrics-generator)"

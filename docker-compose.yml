@@ -1,6 +1,6 @@
 name: observability-platform
 
-# Shared development observability platform (spec v0.11).
+# Shared development observability platform.
 # All values that vary per server come from .env (copy .env.example to .env).
 # `${VAR:?message}` makes Compose stop with the message when VAR is missing.
 
