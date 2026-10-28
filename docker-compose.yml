@@ -105,8 +105,7 @@ services:
   mailpit:
     <<: *restart
     image: axllent/mailpit:${MAILPIT_TAG:?Set MAILPIT_TAG in .env}
-    environment:
-      MP_UI_AUTH_FILE: /run/secrets/mailpit_ui_auth
+    command: ["--ui-auth-file=/run/secrets/mailpit_ui_auth"]
     secrets:
       - mailpit_ui_auth
     ports:
