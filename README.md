@@ -107,7 +107,7 @@ OTLP names are translated: dots become underscores and unit/type suffixes are ad
 
 ### Dashboards (Grafana folder "Observability")
 
-Service overview (request rate, errors, latency), Service dependencies, Collector and platform health, Runtime health (.NET), Log explorer, Alert overview. The Runtime health dashboard uses `dotnet_*` metric names and has not been verified against a real application yet.
+Service overview (request rate, errors, latency), Service dependencies, Collector and platform health, Log explorer, Alert overview. Language-specific dashboards (for example runtime health) are delivered with the language guides, not with the platform.
 
 ## Alerting
 
